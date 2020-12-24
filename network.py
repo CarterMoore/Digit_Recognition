@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import mnist_loader
 
 class Network:
 
@@ -51,20 +52,29 @@ class Network:
         self.biases = [b-(eta/len(mini_batch))*nb for b, nb in zip(self.biases, nabla_b)]
         
     def backprop(self, x, y):
+        '''Use backpropagation to compute gradient vector'''
+        # Create gradient vectors
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
+        # Create list for activations in each layers
         activation = x
         activations = [x]
+        # Create list for z values in each layer
         z_vectors = []
+        # Find z value, activation for each layer and add to respective lists
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w,activation)+b
             z_vectors.append(z)
             activation = sigmoid(z)
             activations.append(activation)
+        # Delta value for output layer = gradient of cost function wrt activations
+        # Multiplied by sigma prime of last layer z values
         delta = self.cost_derivative(activations[-1], y) * sigmoid(z_vectors[-1], True)
+        # Use backpropagation formulas to calculate partial derivaties for each weight and bias
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta,np.transpose(activations[-2]))
         for l in range(2, self.num_layers):
+            # Apply backpropagation formulas for each layer to find gradient
             z = z_vectors[-l]
             sp = sigmoid(z, True)
             delta = np.dot(np.transpose(self.weights[-l+1]),delta) * sp
@@ -87,6 +97,7 @@ def sigmoid(z, derivative=False):
     return 1/(1 + np.exp(-z))
 
 if __name__ == '__main__':
-    net = Network([1,2,1])
-    inputs = [[0,0,0,0],[0,0,0,1],[0,0,1,0],[0,1,0,0]]
-    print(np.array(inputs[0]))
+    training_data, x, test_data = mnist_loader.load_data_wrapper()
+    network = Network([784,30,10])
+    network.stochastic_gradient_descent(training_data, 30, 10, 1.0, test_data=test_data)
+
